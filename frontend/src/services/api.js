@@ -1,6 +1,7 @@
 import { auth } from "./firebase";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL =
+  "https://expense-tracker-1-dsbr.onrender.com/api";
 
 const getAuthHeaders = async () => {
   const user = auth.currentUser;
