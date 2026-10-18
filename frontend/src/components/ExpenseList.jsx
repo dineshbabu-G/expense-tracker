@@ -26,7 +26,9 @@ function ExpenseList() {
           );
 
           // Show latest 5 transactions
-          setExpenses(sortedExpenses.slice(0, 5));
+          setExpenses(
+            sortedExpenses.slice(0, 5)
+          );
         } catch (error) {
           console.error(
             "Error loading recent transactions:",
@@ -43,89 +45,184 @@ function ExpenseList() {
 
   if (loading) {
     return (
-      <div
-        style={{
-          padding: "20px",
-          background: "#ffffff",
-          borderRadius: "12px",
-          border: "1px solid #e5e7eb",
-          marginBottom: "20px",
-        }}
-      >
-        <h2>Recent Transactions</h2>
-        <p>Loading transactions...</p>
+      <div style={cardStyle}>
+        <p style={smallTextStyle}>
+          Loading transactions...
+        </p>
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        padding: "20px",
-        background: "#ffffff",
-        borderRadius: "12px",
-        border: "1px solid #e5e7eb",
-        marginBottom: "20px",
-      }}
-    >
-      <h2>Recent Transactions</h2>
+    <div style={cardStyle}>
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "18px",
+        }}
+      >
+        <div>
+          <p
+            style={{
+              margin: "0 0 5px",
+              fontSize: "12px",
+              color: "#6b7280",
+              fontWeight: "500",
+            }}
+          >
+            Latest activity
+          </p>
+
+          <h2 style={headingStyle}>
+            Recent Transactions
+          </h2>
+        </div>
+
+        <span
+          style={{
+            padding: "6px 10px",
+            background: "#f8fafc",
+            borderRadius: "7px",
+            color: "#64748b",
+            fontSize: "12px",
+            fontWeight: "600",
+          }}
+        >
+          Latest 5
+        </span>
+      </div>
 
       {expenses.length === 0 ? (
-        <p>No expenses recorded yet.</p>
+        <div
+          style={{
+            padding: "35px 15px",
+            textAlign: "center",
+            background: "#f8fafc",
+            borderRadius: "10px",
+            color: "#6b7280",
+            fontSize: "14px",
+          }}
+        >
+          No expenses recorded yet.
+        </div>
       ) : (
         <div>
-          {expenses.map((expense) => (
+          {expenses.map((expense, index) => (
             <div
               key={expense._id}
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
+                gap: "15px",
                 padding: "15px 0",
                 borderBottom:
-                  "1px solid #e5e7eb",
+                  index !== expenses.length - 1
+                    ? "1px solid #f1f5f9"
+                    : "none",
               }}
             >
-              <div>
-                <strong>{expense.category}</strong>
-
-                <p
+              {/* Left */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  minWidth: 0,
+                }}
+              >
+                {/* Category Icon */}
+                <div
                   style={{
-                    margin: "5px 0 0",
-                    color: "#6b7280",
-                    fontSize: "14px",
+                    width: "38px",
+                    height: "38px",
+                    minWidth: "38px",
+                    borderRadius: "10px",
+                    background: "#eff6ff",
+                    color: "#2563eb",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "15px",
+                    fontWeight: "700",
                   }}
                 >
-                  {expense.date
-                    ? new Date(
-                        expense.date
-                      ).toLocaleDateString(
-                        "en-IN",
-                        {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        }
-                      )
-                    : "No date"}{" "}
-                  • {expense.payment}
-                </p>
+                  ₹
+                </div>
 
-                {expense.notes && (
-                  <p
+                <div
+                  style={{
+                    minWidth: 0,
+                  }}
+                >
+                  <strong
                     style={{
-                      margin: "5px 0 0",
-                      color: "#6b7280",
-                      fontSize: "13px",
+                      display: "block",
+                      color: "#111827",
+                      fontSize: "14px",
+                      fontWeight: "600",
+                      marginBottom: "4px",
                     }}
                   >
-                    {expense.notes}
+                    {expense.category}
+                  </strong>
+
+                  <p
+                    style={{
+                      margin: 0,
+                      color: "#6b7280",
+                      fontSize: "12px",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {expense.date
+                      ? new Date(
+                          expense.date
+                        ).toLocaleDateString(
+                          "en-IN",
+                          {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          }
+                        )
+                      : "No date"}{" "}
+                    · {expense.payment}
                   </p>
-                )}
+
+                  {expense.notes && (
+                    <p
+                      style={{
+                        margin: "4px 0 0",
+                        color: "#94a3b8",
+                        fontSize: "11px",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        maxWidth: "350px",
+                      }}
+                    >
+                      {expense.notes}
+                    </p>
+                  )}
+                </div>
               </div>
 
-              <strong>
-                ₹{Number(
+              {/* Amount */}
+              <strong
+                style={{
+                  color: "#111827",
+                  fontSize: "15px",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                ₹
+                {Number(
                   expense.amount
                 ).toLocaleString()}
               </strong>
@@ -136,5 +233,28 @@ function ExpenseList() {
     </div>
   );
 }
+
+const cardStyle = {
+  padding: "22px",
+  background: "#ffffff",
+  borderRadius: "14px",
+  border: "1px solid #e5e7eb",
+  boxShadow:
+    "0 4px 12px rgba(15, 23, 42, 0.04)",
+  boxSizing: "border-box",
+};
+
+const headingStyle = {
+  margin: 0,
+  fontSize: "18px",
+  color: "#111827",
+  fontWeight: "700",
+};
+
+const smallTextStyle = {
+  margin: 0,
+  color: "#6b7280",
+  fontSize: "14px",
+};
 
 export default ExpenseList;

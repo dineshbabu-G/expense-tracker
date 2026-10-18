@@ -1,165 +1,93 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../services/firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import "../Login.css";
 
-function Profile() {
-  const [user, setUser] = useState(null);
+function Login() {
+  const navigate = useNavigate();
 
-  const [budget, setBudget] = useState(() => {
-    const savedBudget =
-      localStorage.getItem("monthlyBudget");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-    return savedBudget || "15000";
-  });
-
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      (currentUser) => {
-        setUser(currentUser);
-      }
-    );
-
-    return () => unsubscribe();
-  }, []);
-
-  const handleSave = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setError("");
 
-    const budgetNumber = Number(budget);
+    try {
+      const result = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
 
-    if (budgetNumber <= 0) {
-      alert("Please enter a valid budget.");
-      return;
+      console.log("LOGIN SUCCESS:", result.user.uid);
+
+      navigate("/expenses");
+    } catch (error) {
+      console.error("LOGIN ERROR:", error);
+
+      setError("Invalid email or password");
     }
-
-    localStorage.setItem(
-      "monthlyBudget",
-      budgetNumber
-    );
-
-    setBudget(String(budgetNumber));
-    setSaved(true);
-
-    setTimeout(() => {
-      setSaved(false);
-    }, 2000);
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#f5f7fa",
-        padding: "30px",
-        boxSizing: "border-box",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "700px",
-          margin: "0 auto",
-          background: "#ffffff",
-          padding: "30px",
-          borderRadius: "12px",
-          border: "1px solid #e5e7eb",
-        }}
-      >
-        <h1>Profile</h1>
+    <div className="login-page">
+      <div className="login-box">
+        <h1>Login</h1>
 
-        <p>
-          Manage your profile and monthly budget.
-        </p>
+        <form onSubmit={handleLogin}>
+          <div>
+            <label>Email</label>
+            <br />
 
-        <hr />
-
-        <h2>Account Details</h2>
-
-        {user ? (
-          <div
-            style={{
-              marginBottom: "25px",
-            }}
-          >
-            <p>
-              <strong>Email:</strong>{" "}
-              {user.email}
-            </p>
-
-            <p>
-              <strong>User ID:</strong>{" "}
-              {user.uid}
-            </p>
+            <input
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
-        ) : (
-          <p>Checking login...</p>
-        )}
-
-        <hr />
-
-        <h2>Monthly Budget</h2>
-
-        <p>
-          Set the amount you want to spend
-          each month.
-        </p>
-
-        <form onSubmit={handleSave}>
-          <label>
-            Monthly Budget
-          </label>
 
           <br />
 
-          <input
-            type="number"
-            value={budget}
-            onChange={(e) =>
-              setBudget(e.target.value)
-            }
-            min="1"
-            required
-            style={{
-              width: "100%",
-              padding: "12px",
-              marginTop: "8px",
-              marginBottom: "15px",
-              boxSizing: "border-box",
-              border:
-                "1px solid #d1d5db",
-              borderRadius: "8px",
-              fontSize: "16px",
-            }}
-          />
+          <div>
+            <label>Password</label>
+            <br />
 
-          <button
-            type="submit"
-            style={{
-              padding: "12px 20px",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-            }}
-          >
-            Save Budget
+            <input
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <br />
+
+          <button type="submit">
+            Login
           </button>
         </form>
 
-        {saved && (
-          <p
-            style={{
-              color: "green",
-              marginTop: "15px",
-            }}
-          >
-            Monthly budget saved successfully!
+        {error && (
+          <p style={{ color: "red" }}>
+            {error}
           </p>
         )}
+
+        <p>
+          Don't have an account?{" "}
+          <Link to="/signup">
+            Create an Account
+          </Link>
+        </p>
       </div>
     </div>
   );
 }
 
-export default Profile;
+export default Login;

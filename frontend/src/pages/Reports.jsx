@@ -5,6 +5,9 @@ import { getExpenses } from "../services/api";
 import { auth } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
+import Navbar from "../components/Navbar";
+import Sidebar from "../components/Sidebar";
+
 function Reports() {
   const today = new Date();
 
@@ -27,9 +30,7 @@ function Reports() {
   );
 
   const [user, setUser] = useState(null);
-
   const [expenses, setExpenses] = useState([]);
-
   const [loading, setLoading] = useState(true);
 
   const [budget, setBudget] = useState(() => {
@@ -68,10 +69,7 @@ function Reports() {
     "Other",
   ];
 
-  // -----------------------------
-  // Load User + Expenses
-  // -----------------------------
-
+  // Load user + expenses
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
       auth,
@@ -85,7 +83,6 @@ function Reports() {
 
         try {
           setUser(currentUser);
-
           setLoading(true);
 
           const data = await getExpenses(
@@ -107,10 +104,7 @@ function Reports() {
     return () => unsubscribe();
   }, []);
 
-  // -----------------------------
-  // Load Budget
-  // -----------------------------
-
+  // Load budget
   useEffect(() => {
     const savedBudget =
       localStorage.getItem("monthlyBudget");
@@ -120,10 +114,7 @@ function Reports() {
     }
   }, []);
 
-  // -----------------------------
   // Get Monday
-  // -----------------------------
-
   const getMonday = (date) => {
     const result = new Date(date);
 
@@ -141,10 +132,7 @@ function Reports() {
     return result;
   };
 
-  // -----------------------------
   // Get Sunday
-  // -----------------------------
-
   const getSunday = (date) => {
     const monday = getMonday(date);
 
@@ -164,17 +152,13 @@ function Reports() {
     return sunday;
   };
 
-  // -----------------------------
-  // Filter Expenses
-  // -----------------------------
-
+  // Filter expenses
   const filteredExpenses = expenses.filter(
     (expense) => {
       const expenseDate = new Date(
         expense.date
       );
 
-      // DAILY
       if (view === "daily") {
         const selected = new Date(
           selectedDate
@@ -190,7 +174,6 @@ function Reports() {
         );
       }
 
-      // WEEKLY
       if (view === "weekly") {
         const selected = new Date(
           selectedDate
@@ -208,38 +191,27 @@ function Reports() {
         );
       }
 
-      // MONTHLY
       return (
         expenseDate.getFullYear() ===
           year &&
-        expenseDate.getMonth() ===
-          month
+        expenseDate.getMonth() === month
       );
     }
   );
 
-  // -----------------------------
-  // Total Spent
-  // -----------------------------
-
+  // Total
   const totalSpent =
     filteredExpenses.reduce(
       (total, expense) =>
-        total + Number(expense.amount),
+        total + Number(expense.amount || 0),
       0
     );
 
-  // -----------------------------
   // Remaining
-  // -----------------------------
-
   const remaining =
     budget - totalSpent;
 
-  // -----------------------------
-  // Category Totals
-  // -----------------------------
-
+  // Category totals
   const categoryTotals = {};
 
   categoryNames.forEach((category) => {
@@ -248,20 +220,15 @@ function Reports() {
 
   filteredExpenses.forEach((expense) => {
     if (
-      categoryTotals[
-        expense.category
-      ] !== undefined
+      categoryTotals[expense.category] !==
+      undefined
     ) {
-      categoryTotals[
-        expense.category
-      ] += Number(expense.amount);
+      categoryTotals[expense.category] +=
+        Number(expense.amount || 0);
     }
   });
 
-  // -----------------------------
-  // Report Title
-  // -----------------------------
-
+  // Report title
   const getReportTitle = () => {
     if (view === "daily") {
       return `Daily Report - ${selectedDate}`;
@@ -288,10 +255,7 @@ function Reports() {
     return `Monthly Report - ${monthNames[month]} ${year}`;
   };
 
-  // -----------------------------
   // Download PDF
-  // -----------------------------
-
   const downloadPDF = () => {
     try {
       setExporting(true);
@@ -300,7 +264,6 @@ function Reports() {
 
       let y = 20;
 
-      // Title
       doc.setFontSize(18);
 
       doc.text(
@@ -311,7 +274,6 @@ function Reports() {
 
       y += 10;
 
-      // Report period
       doc.setFontSize(12);
 
       doc.text(
@@ -322,7 +284,6 @@ function Reports() {
 
       y += 12;
 
-      // Summary
       doc.setFontSize(11);
 
       doc.text(
@@ -357,7 +318,6 @@ function Reports() {
 
       y += 12;
 
-      // Category section
       doc.setFontSize(14);
 
       doc.text(
@@ -389,7 +349,6 @@ function Reports() {
 
       y += 5;
 
-      // Expense section
       doc.setFontSize(14);
 
       doc.text(
@@ -424,7 +383,7 @@ function Reports() {
 
             const amount =
               Number(
-                expense.amount
+                expense.amount || 0
               ).toLocaleString();
 
             const category =
@@ -449,7 +408,6 @@ function Reports() {
                   : ""
               }`;
 
-            // New page if required
             if (y > 270) {
               doc.addPage();
 
@@ -487,7 +445,6 @@ function Reports() {
         );
       }
 
-      // Footer
       const pageCount =
         doc.internal.getNumberOfPages();
 
@@ -533,10 +490,7 @@ function Reports() {
     }
   };
 
-  // -----------------------------
   // Download CSV
-  // -----------------------------
-
   const downloadCSV = () => {
     try {
       setExporting(true);
@@ -573,7 +527,7 @@ function Reports() {
                 )
               : "",
             expense.time || "",
-            Number(expense.amount),
+            Number(expense.amount || 0),
             expense.category || "",
             expense.payment || "",
             expense.notes || "",
@@ -653,591 +607,1075 @@ function Reports() {
     }
   };
 
-  // -----------------------------
   // Loading
-  // -----------------------------
-
   if (loading) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          padding: "30px",
-          background: "#f5f7fa",
-        }}
-      >
-        <h1>Reports</h1>
+      <div className="reports-status">
+        <div className="status-card">
+          <div className="spinner"></div>
+          <p>Loading reports...</p>
+        </div>
 
-        <p>
-          Loading reports...
-        </p>
+        <style>{`
+          .reports-status {
+            min-height: 100vh;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .status-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 30px;
+            text-align: center;
+            color: #64748b;
+          }
+
+          .spinner {
+            width: 30px;
+            height: 30px;
+            margin: 0 auto 12px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: reportSpin 0.8s linear infinite;
+          }
+
+          @keyframes reportSpin {
+            to {
+              transform: rotate(360deg);
+            }
+          }
+        `}</style>
       </div>
     );
   }
 
-  // -----------------------------
-  // Login Check
-  // -----------------------------
-
+  // Login check
   if (!user) {
     return (
-      <div
-        style={{
-          padding: "30px",
-        }}
-      >
-        <h1>
-          Please login first.
-        </h1>
+      <div className="reports-status">
+        <div className="status-card">
+          <h2>Please login first.</h2>
+        </div>
+
+        <style>{`
+          .reports-status {
+            min-height: 100vh;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .status-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 30px;
+            color: #111827;
+          }
+        `}</style>
       </div>
     );
   }
 
-  // -----------------------------
-  // UI
-  // -----------------------------
-
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#f5f7fa",
-        padding: "30px",
-        boxSizing: "border-box",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "1000px",
-          margin: "0 auto",
-          background: "#ffffff",
-          padding: "30px",
-          borderRadius: "12px",
-          border:
-            "1px solid #e5e7eb",
-        }}
-      >
-        <h1>
-          Reports
-        </h1>
+    <div className="reports-page">
+      <Navbar />
 
-        <p>
-          View and download your
-          expense reports.
-        </p>
+      <div className="reports-layout">
+        <Sidebar />
 
-        <hr />
+        <main className="reports-main">
 
-        {/* View Type */}
-        <h2>
-          Report Period
-        </h2>
+          {/* Header */}
+          <div className="reports-header">
+            <div>
+              <h1>Reports</h1>
 
-        <div
-          style={{
-            display: "flex",
-            gap: "10px",
-            flexWrap: "wrap",
-            marginBottom: "25px",
-          }}
-        >
-          <button
-            onClick={() =>
-              setView("daily")
-            }
-          >
-            Daily
-          </button>
+              <p>
+                Review your spending and
+                download detailed reports.
+              </p>
+            </div>
 
-          <button
-            onClick={() =>
-              setView("weekly")
-            }
-          >
-            Weekly
-          </button>
-
-          <button
-            onClick={() =>
-              setView("monthly")
-            }
-          >
-            Monthly
-          </button>
-        </div>
-
-        {/* Daily */}
-        {view === "daily" && (
-          <div
-            style={{
-              marginBottom: "20px",
-            }}
-          >
-            <label>
-              Select Date
-            </label>
-
-            <br />
-
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) =>
-                setSelectedDate(
-                  e.target.value
-                )
-              }
-              style={{
-                padding: "10px",
-                marginTop: "5px",
-              }}
-            />
+            <div className="transaction-count">
+              <span>Transactions</span>
+              <strong>
+                {filteredExpenses.length}
+              </strong>
+            </div>
           </div>
-        )}
 
-        {/* Weekly */}
-        {view === "weekly" && (
-          <div
-            style={{
-              marginBottom: "20px",
-            }}
-          >
-            <label>
-              Select Any Date
-            </label>
+          {/* Report Controls */}
+          <section className="report-controls">
 
-            <br />
+            <div className="section-title">
+              <div>
+                <h2>Report Period</h2>
 
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) =>
-                setSelectedDate(
-                  e.target.value
-                )
-              }
-              style={{
-                padding: "10px",
-                marginTop: "5px",
-              }}
-            />
+                <p>
+                  Select the period you want
+                  to analyze.
+                </p>
+              </div>
+            </div>
 
-            <p>
-              Week:
-              {" "}
-              {getMonday(
-                new Date(
-                  selectedDate
-                )
-              ).toLocaleDateString(
-                "en-IN"
-              )}
-              {" "}
-              to{" "}
-              {getSunday(
-                new Date(
-                  selectedDate
-                )
-              ).toLocaleDateString(
-                "en-IN"
-              )}
-            </p>
-          </div>
-        )}
+            {/* View buttons */}
+            <div className="view-tabs">
+              <button
+                className={
+                  view === "daily"
+                    ? "active"
+                    : ""
+                }
+                onClick={() =>
+                  setView("daily")
+                }
+              >
+                Daily
+              </button>
 
-        {/* Monthly */}
-        {view === "monthly" && (
-          <>
-            <div
-              style={{
-                marginBottom: "15px",
-              }}
-            >
-              <label>
-                Month
-              </label>
+              <button
+                className={
+                  view === "weekly"
+                    ? "active"
+                    : ""
+                }
+                onClick={() =>
+                  setView("weekly")
+                }
+              >
+                Weekly
+              </button>
 
-              <br />
+              <button
+                className={
+                  view === "monthly"
+                    ? "active"
+                    : ""
+                }
+                onClick={() =>
+                  setView("monthly")
+                }
+              >
+                Monthly
+              </button>
+            </div>
 
-              <select
-                value={month}
-                onChange={(e) =>
-                  setMonth(
-                    Number(
+            {/* Daily */}
+            {view === "daily" && (
+              <div className="selector-box">
+                <label>
+                  Select Date
+                </label>
+
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) =>
+                    setSelectedDate(
                       e.target.value
                     )
-                  )
-                }
-                style={{
-                  padding: "10px",
-                  marginTop: "5px",
-                  width: "200px",
-                }}
-              >
-                {monthNames.map(
-                  (
-                    monthName,
-                    index
-                  ) => (
-                    <option
-                      key={
-                        monthName
-                      }
-                      value={index}
-                    >
-                      {monthName}
+                  }
+                />
+              </div>
+            )}
+
+            {/* Weekly */}
+            {view === "weekly" && (
+              <div className="selector-box">
+                <label>
+                  Select Any Date
+                </label>
+
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) =>
+                    setSelectedDate(
+                      e.target.value
+                    )
+                  }
+                />
+
+                <p className="period-text">
+                  Week:{" "}
+                  {getMonday(
+                    new Date(selectedDate)
+                  ).toLocaleDateString(
+                    "en-IN"
+                  )}{" "}
+                  –{" "}
+                  {getSunday(
+                    new Date(selectedDate)
+                  ).toLocaleDateString(
+                    "en-IN"
+                  )}
+                </p>
+              </div>
+            )}
+
+            {/* Monthly */}
+            {view === "monthly" && (
+              <div className="monthly-selectors">
+                <div className="selector-box">
+                  <label>Month</label>
+
+                  <select
+                    value={month}
+                    onChange={(e) =>
+                      setMonth(
+                        Number(
+                          e.target.value
+                        )
+                      )
+                    }
+                  >
+                    {monthNames.map(
+                      (
+                        monthName,
+                        index
+                      ) => (
+                        <option
+                          key={monthName}
+                          value={index}
+                        >
+                          {monthName}
+                        </option>
+                      )
+                    )}
+                  </select>
+                </div>
+
+                <div className="selector-box">
+                  <label>Year</label>
+
+                  <select
+                    value={year}
+                    onChange={(e) =>
+                      setYear(
+                        Number(
+                          e.target.value
+                        )
+                      )
+                    }
+                  >
+                    <option value="2026">
+                      2026
                     </option>
+
+                    <option value="2025">
+                      2025
+                    </option>
+
+                    <option value="2024">
+                      2024
+                    </option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* Summary */}
+          <section className="summary-grid">
+
+            <div className="summary-card">
+              <span>Monthly Budget</span>
+
+              <strong>
+                ₹{budget.toLocaleString("en-IN")}
+              </strong>
+
+              <small>
+                Planned budget
+              </small>
+            </div>
+
+            <div className="summary-card">
+              <span>Total Spent</span>
+
+              <strong>
+                ₹{totalSpent.toLocaleString("en-IN")}
+              </strong>
+
+              <small>
+                Current report period
+              </small>
+            </div>
+
+            <div className="summary-card">
+              <span>Remaining</span>
+
+              <strong
+                className={
+                  remaining < 0
+                    ? "danger-text"
+                    : "success-text"
+                }
+              >
+                ₹{remaining.toLocaleString("en-IN")}
+              </strong>
+
+              <small>
+                {remaining < 0
+                  ? "Budget exceeded"
+                  : "Available balance"}
+              </small>
+            </div>
+
+          </section>
+
+          {/* Export */}
+          <section className="export-card">
+
+            <div>
+              <h2>Export Report</h2>
+
+              <p>
+                Download the selected report
+                for offline use.
+              </p>
+            </div>
+
+            <div className="export-buttons">
+              <button
+                className="pdf-button"
+                onClick={downloadPDF}
+                disabled={exporting}
+              >
+                {exporting
+                  ? "Exporting..."
+                  : "Download PDF"}
+              </button>
+
+              <button
+                className="csv-button"
+                onClick={downloadCSV}
+                disabled={exporting}
+              >
+                {exporting
+                  ? "Exporting..."
+                  : "Download CSV"}
+              </button>
+            </div>
+
+          </section>
+
+          {/* Category */}
+          <section className="report-card">
+
+            <div className="section-title">
+              <div>
+                <h2>
+                  Category-wise Spending
+                </h2>
+
+                <p>
+                  See where your money is
+                  going.
+                </p>
+              </div>
+            </div>
+
+            <div className="category-list">
+
+              {categoryNames.map(
+                (category) => {
+                  const amount =
+                    categoryTotals[
+                      category
+                    ];
+
+                  const percentage =
+                    totalSpent > 0
+                      ? (amount /
+                          totalSpent) *
+                        100
+                      : 0;
+
+                  return (
+                    <div
+                      className="category-row"
+                      key={category}
+                    >
+                      <div className="category-top">
+                        <span>
+                          {category}
+                        </span>
+
+                        <strong>
+                          ₹
+                          {amount.toLocaleString(
+                            "en-IN"
+                          )}
+                        </strong>
+                      </div>
+
+                      <div className="progress-track">
+                        <div
+                          className="progress-fill"
+                          style={{
+                            width: `${percentage}%`,
+                          }}
+                        ></div>
+                      </div>
+
+                      <small>
+                        {percentage.toFixed(1)}%
+                      </small>
+                    </div>
+                  );
+                }
+              )}
+
+            </div>
+          </section>
+
+          {/* Expense Details */}
+          <section className="report-card">
+
+            <div className="section-title">
+              <div>
+                <h2>Expense Details</h2>
+
+                <p>
+                  Transactions included in
+                  this report.
+                </p>
+              </div>
+
+              <span className="count-badge">
+                {filteredExpenses.length}
+              </span>
+            </div>
+
+            {filteredExpenses.length ===
+            0 ? (
+              <div className="empty-report">
+                <div className="empty-icon">
+                  ₹
+                </div>
+
+                <h3>
+                  No expenses found
+                </h3>
+
+                <p>
+                  There are no expenses for
+                  this selected period.
+                </p>
+              </div>
+            ) : (
+              <div className="report-expenses">
+
+                {filteredExpenses.map(
+                  (expense) => (
+                    <div
+                      className="report-expense"
+                      key={expense._id}
+                    >
+
+                      <div className="report-expense-left">
+
+                        <div className="category-icon">
+                          {expense.category
+                            ? expense.category
+                                .charAt(0)
+                                .toUpperCase()
+                            : "E"}
+                        </div>
+
+                        <div>
+                          <h3>
+                            {expense.category}
+                          </h3>
+
+                          <p>
+                            {expense.date
+                              ? new Date(
+                                  expense.date
+                                ).toLocaleDateString(
+                                  "en-IN"
+                                )
+                              : "No date"}{" "}
+                            ·{" "}
+                            {expense.time ||
+                              "No time"}
+                          </p>
+
+                          <span>
+                            {expense.payment}
+                          </span>
+
+                          {expense.notes && (
+                            <small>
+                              {expense.notes}
+                            </small>
+                          )}
+                        </div>
+
+                      </div>
+
+                      <strong className="expense-amount">
+                        ₹
+                        {Number(
+                          expense.amount || 0
+                        ).toLocaleString(
+                          "en-IN"
+                        )}
+                      </strong>
+
+                    </div>
                   )
                 )}
-              </select>
-            </div>
 
-            <div
-              style={{
-                marginBottom: "20px",
-              }}
-            >
-              <label>
-                Year
-              </label>
+              </div>
+            )}
 
-              <br />
+          </section>
 
-              <select
-                value={year}
-                onChange={(e) =>
-                  setYear(
-                    Number(
-                      e.target.value
-                    )
-                  )
-                }
-                style={{
-                  padding: "10px",
-                  marginTop: "5px",
-                  width: "200px",
-                }}
-              >
-                <option value="2026">
-                  2026
-                </option>
-
-                <option value="2025">
-                  2025
-                </option>
-
-                <option value="2024">
-                  2024
-                </option>
-              </select>
-            </div>
-          </>
-        )}
-
-        {/* Export Buttons */}
-        <div
-          style={{
-            display: "flex",
-            gap: "10px",
-            flexWrap: "wrap",
-            marginBottom: "25px",
-          }}
-        >
-          <button
-            onClick={downloadPDF}
-            disabled={exporting}
-            style={{
-              padding: "12px 20px",
-              cursor: exporting
-                ? "not-allowed"
-                : "pointer",
-            }}
-          >
-            {exporting
-              ? "Exporting..."
-              : "Download PDF"}
-          </button>
-
-          <button
-            onClick={downloadCSV}
-            disabled={exporting}
-            style={{
-              padding: "12px 20px",
-              cursor: exporting
-                ? "not-allowed"
-                : "pointer",
-            }}
-          >
-            {exporting
-              ? "Exporting..."
-              : "Download CSV"}
-          </button>
-        </div>
-
-        {/* Summary */}
-        <div
-          style={{
-            padding: "20px",
-            background: "#f8fafc",
-            borderRadius: "10px",
-            border:
-              "1px solid #e5e7eb",
-            marginBottom: "20px",
-          }}
-        >
-          <h2>
-            {getReportTitle()}
-          </h2>
-
-          <p>
-            Monthly Budget:
-            {" "}
-            <strong>
-              ₹
-              {budget.toLocaleString()}
-            </strong>
-          </p>
-
-          <p>
-            Total Spent:
-            {" "}
-            <strong>
-              ₹
-              {totalSpent.toLocaleString()}
-            </strong>
-          </p>
-
-          <p>
-            Remaining:
-            {" "}
-            <strong
-              style={{
-                color:
-                  remaining < 0
-                    ? "#dc2626"
-                    : "#16a34a",
-              }}
-            >
-              ₹
-              {remaining.toLocaleString()}
-            </strong>
-          </p>
-
-          <p>
-            Transactions:
-            {" "}
-            <strong>
-              {filteredExpenses.length}
-            </strong>
-          </p>
-
-          {remaining < 0 && (
-            <p
-              style={{
-                color: "#dc2626",
-                fontWeight: "bold",
-              }}
-            >
-              Budget exceeded!
-            </p>
-          )}
-        </div>
-
-        {/* Category Report */}
-        <div
-          style={{
-            padding: "20px",
-            background: "#ffffff",
-            borderRadius: "10px",
-            border:
-              "1px solid #e5e7eb",
-            marginBottom: "20px",
-          }}
-        >
-          <h2>
-            Category-wise Spending
-          </h2>
-
-          {categoryNames.map(
-            (category) => {
-              const amount =
-                categoryTotals[
-                  category
-                ];
-
-              const percentage =
-                totalSpent > 0
-                  ? (amount /
-                      totalSpent) *
-                    100
-                  : 0;
-
-              return (
-                <div
-                  key={category}
-                  style={{
-                    marginBottom:
-                      "15px",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent:
-                        "space-between",
-                      marginBottom:
-                        "5px",
-                    }}
-                  >
-                    <span>
-                      {category}
-                    </span>
-
-                    <strong>
-                      ₹
-                      {amount.toLocaleString()}
-                    </strong>
-                  </div>
-
-                  <div
-                    style={{
-                      width: "100%",
-                      height: "10px",
-                      background:
-                        "#e5e7eb",
-                      borderRadius:
-                        "10px",
-                      overflow:
-                        "hidden",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: `${percentage}%`,
-                        height: "100%",
-                        background:
-                          "#2563eb",
-                        borderRadius:
-                          "10px",
-                      }}
-                    ></div>
-                  </div>
-
-                  <small>
-                    {percentage.toFixed(
-                      1
-                    )}
-                    %
-                  </small>
-                </div>
-              );
-            }
-          )}
-        </div>
-
-        {/* Expense List */}
-        <div
-          style={{
-            padding: "20px",
-            background: "#ffffff",
-            borderRadius: "10px",
-            border:
-              "1px solid #e5e7eb",
-          }}
-        >
-          <h2>
-            Expenses
-          </h2>
-
-          {filteredExpenses.length ===
-          0 ? (
-            <p>
-              No expenses found for
-              this period.
-            </p>
-          ) : (
-            filteredExpenses.map(
-              (expense) => (
-                <div
-                  key={expense._id}
-                  style={{
-                    padding:
-                      "15px 0",
-                    borderBottom:
-                      "1px solid #e5e7eb",
-                  }}
-                >
-                  <strong>
-                    {
-                      expense.category
-                    }
-                  </strong>
-
-                  <p>
-                    ₹
-                    {Number(
-                      expense.amount
-                    ).toLocaleString()}
-                  </p>
-
-                  <p
-                    style={{
-                      color:
-                        "#6b7280",
-                    }}
-                  >
-                    Date:{" "}
-                    {expense.date
-                      ? new Date(
-                          expense.date
-                        ).toLocaleDateString(
-                          "en-IN"
-                        )
-                      : "No date"}
-                  </p>
-
-                  <p
-                    style={{
-                      color:
-                        "#6b7280",
-                    }}
-                  >
-                    Time:{" "}
-                    {expense.time ||
-                      "Not available"}
-                  </p>
-
-                  <p
-                    style={{
-                      color:
-                        "#6b7280",
-                    }}
-                  >
-                    Payment:{" "}
-                    {
-                      expense.payment
-                    }
-                  </p>
-
-                  {expense.notes && (
-                    <p
-                      style={{
-                        color:
-                          "#6b7280",
-                      }}
-                    >
-                      Notes:{" "}
-                      {
-                        expense.notes
-                      }
-                    </p>
-                  )}
-                </div>
-              )
-            )
-          )}
-        </div>
+        </main>
       </div>
+
+      <style>{`
+
+        .reports-page {
+          min-height: 100vh;
+          background: #f8fafc;
+          overflow-x: hidden;
+        }
+
+        .reports-layout {
+          width: 100%;
+          max-width: 1440px;
+          margin: 0 auto;
+          padding: 24px;
+          display: flex;
+          gap: 24px;
+          align-items: flex-start;
+        }
+
+        .reports-main {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .reports-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 20px;
+          margin-bottom: 24px;
+        }
+
+        .reports-header h1 {
+          margin: 0;
+          color: #111827;
+          font-size: 30px;
+          font-weight: 700;
+          letter-spacing: -0.5px;
+        }
+
+        .reports-header p {
+          margin: 8px 0 0;
+          color: #64748b;
+          font-size: 14px;
+        }
+
+        .transaction-count {
+          min-width: 120px;
+          padding: 14px 18px;
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+        }
+
+        .transaction-count span {
+          display: block;
+          color: #64748b;
+          font-size: 12px;
+          margin-bottom: 4px;
+        }
+
+        .transaction-count strong {
+          color: #111827;
+          font-size: 20px;
+        }
+
+        .report-controls,
+        .report-card,
+        .export-card {
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 14px;
+          padding: 24px;
+          margin-bottom: 20px;
+          box-shadow:
+            0 4px 12px
+            rgba(15, 23, 42, 0.04);
+        }
+
+        .section-title {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 15px;
+          margin-bottom: 20px;
+        }
+
+        .section-title h2 {
+          margin: 0;
+          color: #111827;
+          font-size: 18px;
+          font-weight: 700;
+        }
+
+        .section-title p {
+          margin: 5px 0 0;
+          color: #64748b;
+          font-size: 13px;
+        }
+
+        .view-tabs {
+          display: flex;
+          gap: 8px;
+          padding: 5px;
+          width: fit-content;
+          margin-bottom: 22px;
+          background: #f1f5f9;
+          border-radius: 10px;
+        }
+
+        .view-tabs button {
+          border: 0;
+          background: transparent;
+          color: #64748b;
+          padding: 9px 18px;
+          border-radius: 7px;
+          font-family: inherit;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .view-tabs button.active {
+          background: #ffffff;
+          color: #2563eb;
+          box-shadow:
+            0 1px 4px
+            rgba(15, 23, 42, 0.08);
+        }
+
+        .selector-box {
+          display: flex;
+          flex-direction: column;
+          width: 230px;
+        }
+
+        .selector-box label {
+          margin-bottom: 7px;
+          color: #374151;
+          font-size: 13px;
+          font-weight: 600;
+        }
+
+        .selector-box input,
+        .selector-box select {
+          width: 100%;
+          padding: 11px 12px;
+          border: 1px solid #dbe1e8;
+          border-radius: 9px;
+          background: #ffffff;
+          color: #111827;
+          font-family: inherit;
+          font-size: 14px;
+          outline: none;
+        }
+
+        .selector-box input:focus,
+        .selector-box select:focus {
+          border-color: #2563eb;
+          box-shadow:
+            0 0 0 3px
+            rgba(37, 99, 235, 0.1);
+        }
+
+        .period-text {
+          margin: 9px 0 0;
+          color: #64748b;
+          font-size: 12px;
+        }
+
+        .monthly-selectors {
+          display: flex;
+          gap: 14px;
+          flex-wrap: wrap;
+        }
+
+        .summary-grid {
+          display: grid;
+          grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+          gap: 16px;
+          margin-bottom: 20px;
+        }
+
+        .summary-card {
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 14px;
+          padding: 20px;
+          box-shadow:
+            0 4px 12px
+            rgba(15, 23, 42, 0.04);
+        }
+
+        .summary-card span {
+          display: block;
+          color: #64748b;
+          font-size: 13px;
+          margin-bottom: 7px;
+        }
+
+        .summary-card strong {
+          display: block;
+          color: #111827;
+          font-size: 24px;
+          font-weight: 700;
+        }
+
+        .summary-card small {
+          display: block;
+          margin-top: 7px;
+          color: #94a3b8;
+          font-size: 11px;
+        }
+
+        .success-text {
+          color: #16a34a !important;
+        }
+
+        .danger-text {
+          color: #dc2626 !important;
+        }
+
+        .export-card {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 20px;
+        }
+
+        .export-card h2 {
+          margin: 0;
+          color: #111827;
+          font-size: 17px;
+        }
+
+        .export-card p {
+          margin: 5px 0 0;
+          color: #64748b;
+          font-size: 13px;
+        }
+
+        .export-buttons {
+          display: flex;
+          gap: 9px;
+          flex-wrap: wrap;
+        }
+
+        .export-buttons button {
+          border: 0;
+          border-radius: 8px;
+          padding: 11px 16px;
+          font-family: inherit;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .pdf-button {
+          background: #2563eb;
+          color: #ffffff;
+        }
+
+        .csv-button {
+          background: #eff6ff;
+          color: #2563eb;
+        }
+
+        .export-buttons button:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+        }
+
+        .category-list {
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+        }
+
+        .category-row {
+          width: 100%;
+        }
+
+        .category-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 8px;
+        }
+
+        .category-top span {
+          color: #374151;
+          font-size: 14px;
+          font-weight: 600;
+        }
+
+        .category-top strong {
+          color: #111827;
+          font-size: 13px;
+        }
+
+        .progress-track {
+          width: 100%;
+          height: 8px;
+          background: #eef2f7;
+          border-radius: 999px;
+          overflow: hidden;
+        }
+
+        .progress-fill {
+          height: 100%;
+          background: #2563eb;
+          border-radius: 999px;
+          transition: width 0.3s ease;
+        }
+
+        .category-row small {
+          display: block;
+          margin-top: 5px;
+          color: #94a3b8;
+          font-size: 11px;
+          text-align: right;
+        }
+
+        .count-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 32px;
+          height: 28px;
+          padding: 0 9px;
+          border-radius: 999px;
+          background: #eff6ff;
+          color: #2563eb;
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .report-expenses {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .report-expense {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 18px;
+          padding: 16px 0;
+          border-bottom: 1px solid #eef2f7;
+        }
+
+        .report-expense:first-child {
+          padding-top: 0;
+        }
+
+        .report-expense:last-child {
+          padding-bottom: 0;
+          border-bottom: 0;
+        }
+
+        .report-expense-left {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          min-width: 0;
+        }
+
+        .category-icon {
+          width: 40px;
+          height: 40px;
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #eff6ff;
+          color: #2563eb;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 700;
+        }
+
+        .report-expense-left h3 {
+          margin: 0;
+          color: #111827;
+          font-size: 14px;
+        }
+
+        .report-expense-left p {
+          margin: 4px 0;
+          color: #64748b;
+          font-size: 12px;
+        }
+
+        .report-expense-left span {
+          display: inline-block;
+          padding: 3px 7px;
+          background: #f1f5f9;
+          color: #64748b;
+          border-radius: 5px;
+          font-size: 10px;
+          font-weight: 600;
+        }
+
+        .report-expense-left small {
+          display: block;
+          margin-top: 5px;
+          color: #6b7280;
+          font-size: 11px;
+        }
+
+        .expense-amount {
+          flex-shrink: 0;
+          color: #111827;
+          font-size: 15px;
+        }
+
+        .empty-report {
+          padding: 45px 20px;
+          text-align: center;
+        }
+
+        .empty-icon {
+          width: 48px;
+          height: 48px;
+          margin: 0 auto 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #eff6ff;
+          color: #2563eb;
+          border-radius: 12px;
+          font-weight: 700;
+        }
+
+        .empty-report h3 {
+          margin: 0 0 5px;
+          color: #374151;
+          font-size: 16px;
+        }
+
+        .empty-report p {
+          margin: 0;
+          color: #64748b;
+          font-size: 13px;
+        }
+
+        @media (max-width: 1000px) {
+          .reports-layout {
+            padding: 20px;
+          }
+
+          .summary-grid {
+            grid-template-columns:
+              repeat(2, minmax(0, 1fr));
+          }
+        }
+
+        @media (max-width: 768px) {
+          .reports-layout {
+            display: block;
+            padding: 16px;
+          }
+
+          .reports-header {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+
+          .reports-header h1 {
+            font-size: 25px;
+          }
+
+          .transaction-count {
+            width: 100%;
+          }
+
+          .summary-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .report-controls,
+          .report-card,
+          .export-card {
+            padding: 18px;
+            margin-bottom: 16px;
+          }
+
+          .export-card {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+
+          .export-buttons {
+            width: 100%;
+          }
+
+          .export-buttons button {
+            flex: 1;
+          }
+
+          .selector-box {
+            width: 100%;
+          }
+        }
+
+        @media (max-width: 520px) {
+          .reports-layout {
+            padding: 12px;
+          }
+
+          .view-tabs {
+            width: 100%;
+          }
+
+          .view-tabs button {
+            flex: 1;
+            padding: 9px 8px;
+          }
+
+          .monthly-selectors {
+            flex-direction: column;
+          }
+
+          .report-expense {
+            align-items: flex-start;
+          }
+
+          .expense-amount {
+            font-size: 14px;
+          }
+        }
+
+      `}</style>
     </div>
   );
 }

@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { getExpenses } from "../services/api";
-import { auth } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
+import { auth } from "../services/firebase";
+import { getExpenses } from "../services/api";
+
 function SpendingChart() {
-  const [spendingData, setSpendingData] = useState([]);
+  const [dailyData, setDailyData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,7 +22,6 @@ function SpendingChart() {
 
           const today = new Date();
 
-          // Find Monday of current week
           const monday = new Date(today);
           const day = monday.getDay();
 
@@ -34,60 +34,63 @@ function SpendingChart() {
 
           monday.setHours(0, 0, 0, 0);
 
-          const dayNames = [
-            "Mon",
-            "Tue",
-            "Wed",
-            "Thu",
-            "Fri",
-            "Sat",
-            "Sun",
-          ];
+          const days = [];
 
-          const weeklyData = dayNames.map(
-            (dayName, index) => {
-              const currentDay = new Date(monday);
+          for (let i = 0; i < 7; i++) {
+            const date = new Date(monday);
 
-              currentDay.setDate(
-                monday.getDate() + index
-              );
+            date.setDate(
+              monday.getDate() + i
+            );
 
-              currentDay.setHours(0, 0, 0, 0);
+            days.push({
+              date,
+              amount: 0,
+            });
+          }
 
-              const nextDay = new Date(currentDay);
+          expenses.forEach((expense) => {
+            const expenseDate = new Date(
+              expense.date
+            );
 
-              nextDay.setDate(
-                currentDay.getDate() + 1
-              );
+            expenseDate.setHours(0, 0, 0, 0);
 
-              const amount = expenses
-                .filter((expense) => {
-                  const expenseDate = new Date(
-                    expense.date
-                  );
-
-                  return (
-                    expenseDate >= currentDay &&
-                    expenseDate < nextDay
-                  );
-                })
-                .reduce(
-                  (total, expense) =>
-                    total + Number(expense.amount),
-                  0
+            days.forEach((dayData) => {
+              if (
+                expenseDate.getTime() ===
+                dayData.date.getTime()
+              ) {
+                dayData.amount += Number(
+                  expense.amount || 0
                 );
+              }
+            });
+          });
 
-              return {
-                day: dayName,
-                amount,
-              };
-            }
+          const formattedData = days.map(
+            (dayData) => ({
+              label: dayData.date.toLocaleDateString(
+                "en-IN",
+                {
+                  weekday: "short",
+                }
+              ),
+              date: dayData.date.toLocaleDateString(
+                "en-IN",
+                {
+                  day: "2-digit",
+                  month: "short",
+                }
+              ),
+              amount: dayData.amount,
+            })
           );
 
-          setSpendingData(weeklyData);
+          setDailyData(formattedData);
         } catch (error) {
           console.error(
-            "Error loading spending data:",
+            "Spending chart error:",
             error
           );
         } finally {
@@ -100,104 +103,131 @@ function SpendingChart() {
   }, []);
 
   const maxAmount = Math.max(
-    ...spendingData.map((item) => item.amount),
-    0
+    ...dailyData.map((item) => item.amount),
+    1
   );
 
-  if (loading) {
-    return (
-      <div
-        style={{
-          padding: "20px",
-          background: "#ffffff",
-          borderRadius: "12px",
-          border: "1px solid #e5e7eb",
-          marginBottom: "20px",
-        }}
-      >
-        <h2>Daily Spending Trend</h2>
-        <p>Loading spending data...</p>
-      </div>
-    );
-  }
-
   return (
-    <div
+    <section
       style={{
-        padding: "20px",
         background: "#ffffff",
-        borderRadius: "12px",
         border: "1px solid #e5e7eb",
-        marginBottom: "20px",
+        borderRadius: "14px",
+        padding: "24px",
+        boxShadow:
+          "0 4px 12px rgba(15, 23, 42, 0.04)",
       }}
     >
-      <h2>Daily Spending Trend</h2>
+      <div style={{ marginBottom: "22px" }}>
+        <h2
+          style={{
+            margin: 0,
+            fontSize: "18px",
+            color: "#111827",
+          }}
+        >
+          Weekly Spending
+        </h2>
 
-      {maxAmount === 0 ? (
-        <p>No spending recorded this week.</p>
+        <p
+          style={{
+            margin: "5px 0 0",
+            fontSize: "13px",
+            color: "#64748b",
+          }}
+        >
+          Monday to Sunday
+        </p>
+      </div>
+
+      {loading ? (
+        <p
+          style={{
+            margin: 0,
+            color: "#64748b",
+            fontSize: "14px",
+          }}
+        >
+          Loading spending data...
+        </p>
       ) : (
         <div
           style={{
             display: "flex",
             alignItems: "flex-end",
-            gap: "15px",
+            gap: "10px",
             height: "220px",
-            padding: "20px 10px 0",
+            overflowX: "auto",
+            paddingTop: "10px",
           }}
         >
-          {spendingData.map((item) => {
-            const height =
-              maxAmount > 0
-                ? (item.amount / maxAmount) * 160
-                : 0;
+          {dailyData.map((item) => {
+            const barHeight =
+              item.amount > 0
+                ? Math.max(
+                    (item.amount / maxAmount) * 150,
+                    12
+                  )
+                : 5;
 
             return (
               <div
-                key={item.day}
+                key={item.date}
                 style={{
-                  flex: 1,
+                  flex: "1 0 55px",
+                  minWidth: "55px",
+                  height: "100%",
                   display: "flex",
                   flexDirection: "column",
-                  alignItems: "center",
                   justifyContent: "flex-end",
-                  height: "100%",
+                  alignItems: "center",
+                  gap: "7px",
                 }}
               >
                 <span
                   style={{
-                    marginBottom: "5px",
-                    fontSize: "12px",
+                    fontSize: "11px",
+                    color: "#64748b",
+                    minHeight: "15px",
                   }}
                 >
-                  ₹{item.amount.toLocaleString()}
+                  {item.amount > 0
+                    ? `₹${item.amount.toLocaleString(
+                        "en-IN"
+                      )}`
+                    : ""}
                 </span>
 
                 <div
+                  title={`${item.date}: ₹${item.amount.toLocaleString(
+                    "en-IN"
+                  )}`}
                   style={{
-                    width: "100%",
-                    maxWidth: "45px",
-                    height: `${height}px`,
+                    width: "30px",
+                    height: `${barHeight}px`,
                     background: "#2563eb",
-                    borderRadius: "6px 6px 0 0",
-                    minHeight:
-                      item.amount > 0 ? "5px" : "0px",
+                    borderRadius:
+                      "7px 7px 3px 3px",
+                    transition:
+                      "height 0.3s ease",
                   }}
-                ></div>
+                />
 
                 <span
                   style={{
-                    marginTop: "8px",
-                    fontSize: "13px",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    color: "#374151",
                   }}
                 >
-                  {item.day}
+                  {item.label}
                 </span>
               </div>
             );
           })}
         </div>
       )}
-    </div>
+    </section>
   );
 }
 

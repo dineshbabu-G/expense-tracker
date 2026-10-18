@@ -1,11 +1,22 @@
 import { useEffect, useState } from "react";
-import { getExpenses } from "../services/api";
-import { auth } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
+import { auth } from "../services/firebase";
+import { getExpenses } from "../services/api";
+
 function CategoryChart() {
-  const [categories, setCategories] = useState([]);
+  const [categoryData, setCategoryData] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const categories = [
+    "Food",
+    "Travel",
+    "Bills",
+    "Rent",
+    "Shopping",
+    "Entertainment",
+    "Other",
+  ];
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
@@ -20,50 +31,58 @@ function CategoryChart() {
           const expenses = await getExpenses(user.uid);
 
           const now = new Date();
-
-          const currentYear = now.getFullYear();
           const currentMonth = now.getMonth();
+          const currentYear = now.getFullYear();
 
-          const categoryNames = [
-            "Food",
-            "Travel",
-            "Bills",
-            "Rent",
-            "Shopping",
-            "Entertainment",
-            "Other",
-          ];
+          const monthlyExpenses = expenses.filter(
+            (expense) => {
+              const expenseDate = new Date(expense.date);
 
-          const categoryTotals = {};
-
-          categoryNames.forEach((category) => {
-            categoryTotals[category] = 0;
-          });
-
-          expenses.forEach((expense) => {
-            const expenseDate = new Date(expense.date);
-
-            const isCurrentMonth =
-              expenseDate.getFullYear() === currentYear &&
-              expenseDate.getMonth() === currentMonth;
-
-            if (isCurrentMonth) {
-              categoryTotals[expense.category] +=
-                Number(expense.amount);
+              return (
+                expenseDate.getMonth() === currentMonth &&
+                expenseDate.getFullYear() === currentYear
+              );
             }
-          });
-
-          const categoryData = categoryNames.map(
-            (category) => ({
-              name: category,
-              amount: categoryTotals[category],
-            })
           );
 
-          setCategories(categoryData);
+          const totals = {};
+
+          categories.forEach((category) => {
+            totals[category] = 0;
+          });
+
+          monthlyExpenses.forEach((expense) => {
+            const category =
+              categories.includes(expense.category)
+                ? expense.category
+                : "Other";
+
+            totals[category] += Number(
+              expense.amount || 0
+            );
+          });
+
+          const totalAmount = Object.values(totals).reduce(
+            (sum, value) => sum + value,
+            0
+          );
+
+          const data = categories
+            .map((category) => ({
+              category,
+              amount: totals[category],
+              percentage:
+                totalAmount > 0
+                  ? (totals[category] / totalAmount) * 100
+                  : 0,
+            }))
+            .filter((item) => item.amount > 0)
+            .sort((a, b) => b.amount - a.amount);
+
+          setCategoryData(data);
         } catch (error) {
           console.error(
-            "Error loading category data:",
+            "Category chart error:",
             error
           );
         } finally {
@@ -75,101 +94,126 @@ function CategoryChart() {
     return () => unsubscribe();
   }, []);
 
-  const total = categories.reduce(
-    (sum, category) => sum + category.amount,
-    0
-  );
-
-  if (loading) {
-    return (
-      <div
-        style={{
-          padding: "20px",
-          background: "#ffffff",
-          borderRadius: "12px",
-          border: "1px solid #e5e7eb",
-          marginBottom: "20px",
-        }}
-      >
-        <h2>Spending by Category</h2>
-        <p>Loading category data...</p>
-      </div>
-    );
-  }
-
   return (
-    <div
+    <section
       style={{
-        padding: "20px",
         background: "#ffffff",
-        borderRadius: "12px",
         border: "1px solid #e5e7eb",
-        marginBottom: "20px",
+        borderRadius: "14px",
+        padding: "24px",
+        boxShadow:
+          "0 4px 12px rgba(15, 23, 42, 0.04)",
       }}
     >
-      <h2>Spending by Category</h2>
+      <div style={{ marginBottom: "22px" }}>
+        <h2
+          style={{
+            margin: 0,
+            fontSize: "18px",
+            color: "#111827",
+          }}
+        >
+          Spending by Category
+        </h2>
 
-      <p>
-        Total Spent:{" "}
-        <strong>₹{total.toLocaleString()}</strong>
-      </p>
+        <p
+          style={{
+            margin: "5px 0 0",
+            fontSize: "13px",
+            color: "#64748b",
+          }}
+        >
+          This month's spending breakdown
+        </p>
+      </div>
 
-      {total === 0 ? (
-        <p>No expenses recorded for this month.</p>
+      {loading ? (
+        <p
+          style={{
+            margin: 0,
+            color: "#64748b",
+            fontSize: "14px",
+          }}
+        >
+          Loading category data...
+        </p>
+      ) : categoryData.length === 0 ? (
+        <div
+          style={{
+            padding: "30px 10px",
+            textAlign: "center",
+            color: "#64748b",
+            fontSize: "14px",
+          }}
+        >
+          No expenses recorded this month.
+        </div>
       ) : (
-        <div>
-          {categories.map((category) => {
-            const percentage =
-              total > 0
-                ? (category.amount / total) * 100
-                : 0;
-
-            return (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "18px",
+          }}
+        >
+          {categoryData.map((item) => (
+            <div key={item.category}>
               <div
-                key={category.name}
                 style={{
-                  marginBottom: "15px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "8px",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "#374151",
+                  }}
+                >
+                  {item.category}
+                </span>
+
+                <span
+                  style={{
+                    fontSize: "13px",
+                    color: "#64748b",
+                  }}
+                >
+                  ₹
+                  {item.amount.toLocaleString(
+                    "en-IN"
+                  )}{" "}
+                  · {item.percentage.toFixed(0)}%
+                </span>
+              </div>
+
+              <div
+                style={{
+                  height: "8px",
+                  background: "#eef2f7",
+                  borderRadius: "999px",
+                  overflow: "hidden",
                 }}
               >
                 <div
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: "5px",
+                    width: `${item.percentage}%`,
+                    height: "100%",
+                    background: "#2563eb",
+                    borderRadius: "999px",
+                    transition:
+                      "width 0.4s ease",
                   }}
-                >
-                  <span>{category.name}</span>
-
-                  <span>
-                    ₹{category.amount.toLocaleString()} (
-                    {percentage.toFixed(1)}%)
-                  </span>
-                </div>
-
-                <div
-                  style={{
-                    width: "100%",
-                    height: "10px",
-                    background: "#e5e7eb",
-                    borderRadius: "10px",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${percentage}%`,
-                      height: "100%",
-                      background: "#2563eb",
-                      borderRadius: "10px",
-                    }}
-                  ></div>
-                </div>
+                />
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
