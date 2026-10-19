@@ -24,50 +24,63 @@ function Dashboard() {
         <Sidebar />
 
         <main className="dashboard-main">
-          {/* Page Header */}
-          <div className="dashboard-header">
+
+          {/* Header */}
+          <section className="dashboard-header">
             <div>
               <h1>Dashboard</h1>
-
               <p>
                 Track your spending and stay on top of
                 your monthly budget.
               </p>
             </div>
-          </div>
+          </section>
 
-          {/* Budget */}
-          <BudgetCard
-            key={`budget-${refreshKey}`}
-          />
+          {/* Monthly Budget */}
+          <section className="dashboard-section budget-section">
+            <BudgetCard key={`budget-${refreshKey}`} />
+          </section>
 
-          {/* Category + Weekly Spending */}
-          <div className="dashboard-chart-grid">
-            <CategoryChart
-              key={`category-${refreshKey}`}
-            />
+          {/* Charts */}
+          <section className="dashboard-chart-grid">
+            <div className="dashboard-section">
+              <CategoryChart
+                key={`category-${refreshKey}`}
+              />
+            </div>
 
-            <SpendingChart
-              key={`spending-${refreshKey}`}
-            />
-          </div>
+            <div className="dashboard-section">
+              <SpendingChart
+                key={`spending-${refreshKey}`}
+              />
+            </div>
+          </section>
 
-          {/* Recent Transactions + Add Expense */}
-          <div className="dashboard-content-grid">
-            <ExpenseList
-              key={`expenses-${refreshKey}`}
-            />
+          {/* Expenses + Add Expense */}
+          <section className="dashboard-content-grid">
 
-            <ExpenseForm
-              onExpenseAdded={handleExpenseAdded}
-            />
-          </div>
+            <div className="dashboard-section">
+              <ExpenseList
+                key={`expenses-${refreshKey}`}
+              />
+            </div>
+
+            <div className="dashboard-section">
+              <ExpenseForm
+                onExpenseAdded={handleExpenseAdded}
+              />
+            </div>
+
+          </section>
 
           {/* Calendar */}
-          <ExpenseCalendar
-            key={`calendar-${refreshKey}`}
-            onExpenseChanged={handleExpenseAdded}
-          />
+          <section className="dashboard-section calendar-section">
+            <ExpenseCalendar
+              key={`calendar-${refreshKey}`}
+              onExpenseChanged={handleExpenseAdded}
+            />
+          </section>
+
         </main>
       </div>
 
@@ -99,11 +112,11 @@ function Dashboard() {
           width: 100%;
         }
 
+        /* Header */
+
         .dashboard-header {
+          width: 100%;
           margin-bottom: 24px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
         }
 
         .dashboard-header h1 {
@@ -122,17 +135,46 @@ function Dashboard() {
           line-height: 1.6;
         }
 
+        /* Common section */
+
+        .dashboard-section {
+          width: 100%;
+          min-width: 0;
+          margin: 0;
+          padding: 0;
+        }
+
+        .budget-section {
+          margin-bottom: 20px;
+        }
+
+        .calendar-section {
+          margin-top: 0;
+        }
+
+        /* Charts */
+
         .dashboard-chart-grid {
           width: 100%;
+          min-width: 0;
           display: grid;
           grid-template-columns:
-            repeat(2, minmax(0, 1fr));
+            minmax(0, 1fr)
+            minmax(0, 1fr);
           gap: 20px;
           margin-bottom: 20px;
         }
 
+        .dashboard-chart-grid > * {
+          min-width: 0;
+          width: 100%;
+        }
+
+        /* Expense list + form */
+
         .dashboard-content-grid {
           width: 100%;
+          min-width: 0;
           display: grid;
           grid-template-columns:
             minmax(0, 1.35fr)
@@ -142,8 +184,15 @@ function Dashboard() {
           align-items: start;
         }
 
+        .dashboard-content-grid > * {
+          min-width: 0;
+          width: 100%;
+        }
+
         /* Tablet */
+
         @media (max-width: 1000px) {
+
           .dashboard-layout {
             padding: 20px;
             gap: 18px;
@@ -151,25 +200,34 @@ function Dashboard() {
 
           .dashboard-chart-grid {
             grid-template-columns: 1fr;
+            gap: 18px;
           }
 
           .dashboard-content-grid {
             grid-template-columns: 1fr;
+            gap: 18px;
           }
+
         }
 
         /* Mobile */
+
         @media (max-width: 768px) {
+
           .dashboard-layout {
             display: block;
+            width: 100%;
             padding: 16px;
           }
 
           .dashboard-main {
+            display: block;
             width: 100%;
+            min-width: 0;
           }
 
           .dashboard-header {
+            width: 100%;
             margin-bottom: 18px;
           }
 
@@ -182,23 +240,71 @@ function Dashboard() {
             margin-top: 6px;
           }
 
+          .dashboard-section {
+            display: block;
+            width: 100%;
+            min-width: 0;
+            margin-left: 0;
+            margin-right: 0;
+          }
+
+          /* Budget */
+
+          .budget-section {
+            margin-bottom: 16px;
+          }
+
+          /* Charts */
+
           .dashboard-chart-grid {
-            grid-template-columns: 1fr;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
             gap: 16px;
             margin-bottom: 16px;
           }
 
+          .dashboard-chart-grid > * {
+            width: 100%;
+            min-width: 0;
+            flex: none;
+          }
+
+          /* Expenses */
+
           .dashboard-content-grid {
-            grid-template-columns: 1fr;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
             gap: 16px;
             margin-bottom: 16px;
           }
+
+          .dashboard-content-grid > * {
+            width: 100%;
+            min-width: 0;
+            flex: none;
+          }
+
+          /* Calendar */
+
+          .calendar-section {
+            width: 100%;
+            margin-top: 0;
+          }
+
         }
 
         /* Small mobile */
+
         @media (max-width: 480px) {
+
           .dashboard-layout {
             padding: 12px;
+          }
+
+          .dashboard-header {
+            margin-bottom: 16px;
           }
 
           .dashboard-header h1 {
@@ -207,7 +313,19 @@ function Dashboard() {
 
           .dashboard-header p {
             font-size: 12px;
+            line-height: 1.5;
           }
+
+          .dashboard-chart-grid {
+            gap: 14px;
+            margin-bottom: 14px;
+          }
+
+          .dashboard-content-grid {
+            gap: 14px;
+            margin-bottom: 14px;
+          }
+
         }
       `}</style>
     </div>
